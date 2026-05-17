@@ -114,10 +114,17 @@ def predict_row(client, row):
             return valence, arousal
 
         except Exception as exc:
-            log.warning("Attempt %d/%d failed for id=%s: %s",
-                        attempt, RETRY_LIMIT, row.get("Id", "?"), exc)
-            if attempt < RETRY_LIMIT:
-                time.sleep(RETRY_DELAY)
+            err_str = str(exc)
+            if "402" in err_str:
+                wait = RETRY_DELAY * (attempt * 3)  # 15s, 30s, 45s
+                log.warning("Attempt %d/%d failed for id=%s: rate limited (402). Waiting %ds...",
+                            attempt, RETRY_LIMIT, row.get("Id", "?"), wait)
+                time.sleep(wait)
+            else:
+                log.warning("Attempt %d/%d failed for id=%s: %s",
+                            attempt, RETRY_LIMIT, row.get("Id", "?"), exc)
+                if attempt < RETRY_LIMIT:
+                    time.sleep(RETRY_DELAY)
 
     return None, None   # all retries exhausted
 
@@ -182,20 +189,46 @@ def main():
 
     client = InferenceClient(token=HF_TOKEN)
 
-    valences, arousals = [], []
+    # ── PASS 1: run all rows ──
+    df["predicted_valence"] = None
+    df["predicted_arousal"] = None
 
-    for _, row in tqdm(df.iterrows(), total=len(df), desc="Predicting"):
+    for idx, row in tqdm(df.iterrows(), total=len(df), desc="Pass 1"):
         valence, arousal = predict_row(client, row)
-        valences.append(valence)
-        arousals.append(arousal)
+        df.at[idx, "predicted_valence"] = valence
+        df.at[idx, "predicted_arousal"] = arousal
 
-    # Attach predictions
-    df["predicted_valence"] = valences
-    df["predicted_arousal"] = arousals
+    n_failed = df["predicted_valence"].isna().sum()
+    log.info("Pass 1 done. Succeeded: %d, Failed: %d", len(df) - n_failed, n_failed)
+
+    # ── PASS 2+: keep retrying failed rows until all succeed or user gives up ──
+    pass_num = 2
+    while n_failed > 0:
+        log.info("Waiting 60s before pass %d to let rate limit reset...", pass_num)
+        time.sleep(60)
+
+        failed_mask = df["predicted_valence"].isna()
+        for idx, row in tqdm(df[failed_mask].iterrows(), total=n_failed, desc=f"Pass {pass_num}"):
+            valence, arousal = predict_row(client, row)
+            df.at[idx, "predicted_valence"] = valence
+            df.at[idx, "predicted_arousal"] = arousal
+
+        n_failed = df["predicted_valence"].isna().sum()
+        log.info("Pass %d done. Succeeded: %d, Still failed: %d",
+                 pass_num, len(df) - n_failed - (len(df) - df["predicted_valence"].isna().sum() - n_failed), n_failed)
+        pass_num += 1
+
+        if n_failed > 0:
+            log.warning("%d rows still failing. Press Enter to retry, or Ctrl+C to stop and save.", n_failed)
+            try:
+                input()
+            except KeyboardInterrupt:
+                log.info("Stopping retries.")
+                break
 
     # Summary
-    num_failures = df["predicted_valence"].isna().sum()
-    log.info("Done. Predictions: %d succeeded, %d failed.", len(df) - num_failures, num_failures)
+    n_failed = df["predicted_valence"].isna().sum()
+    log.info("Done. Predictions: %d succeeded, %d failed.", len(df) - n_failed, n_failed)
 
     # Save to Excel
     df.to_excel(output_file, index=False)
