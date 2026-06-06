@@ -17,12 +17,12 @@ gt = pd.concat([
 gt.columns = gt.columns.str.strip()
 gt = gt.rename(columns={"song_id": "Id", "valence_mean": "gt_valence", "arousal_mean": "gt_arousal"})
 
-# Assign each song to an emotional quadrant (1–4)
+# Assign each song to an emotional quadrant based on Russell circumplex model
 def get_quadrant(valence, arousal):
-    if valence >= 5 and arousal >= 5: return 1  # Happy
-    if valence <  5 and arousal >= 5: return 2  # Angry
-    if valence <  5 and arousal <  5: return 3  # Sad
-    if valence >= 5 and arousal <  5: return 4  # Calm
+    if valence >= 5 and arousal >= 5: return "HVHA" # Happy/Excited
+    if valence <  5 and arousal >= 5: return "LVHA" # Angry/Tense
+    if valence <  5 and arousal <  5: return "LVLA" # Sad/Depressed
+    if valence >= 5 and arousal <  5: return "HVLA" # Calm/Relaxed
 
 # Evaluate each model
 rows = []
