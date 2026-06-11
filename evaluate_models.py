@@ -4,9 +4,14 @@ from scipy.stats import pearsonr
 
 # Models to evaluate
 MODELS = {
-    "Qwen 2.5 7B":  "predictions_qwen.xlsx",
-    "Llama 3 8B":   "predictions_llama.xlsx",
-    "Mistral 7B":   "predictions_mistral.xlsx",
+    "Qwen 2.5 7B":  "valence_arousal_predictions-qwen.xlsx",
+    "Qwen 2.5 7B - ZeroShot":  "valence_arousal_predictions-qwen-zeroshot.xlsx",
+    "Qwen 2.5 72B":  "valence_arousal_predictions-qwen72.xlsx",
+    "Qwen 2.5 72B - ZeroShot":  "valence_arousal_predictions-qwen72-zeroshot.xlsx",
+    "Llama 3 8B":   "valence_arousal_predictions-llama.xlsx",
+    "Llama 3 8B - ZeroShot":   "valence_arousal_predictions-llama-zeroshot.xlsx",
+    "Llama 3 70B":   "valence_arousal_predictions-llama70.xlsx",
+    "Llama 3 70B - ZeroShot":   "valence_arousal_predictions-llama70-zeroshot.xlsx"
 }
 
 # Load and combine ground truth
@@ -44,4 +49,22 @@ for model, path in MODELS.items():
 # Print and save results
 results = pd.DataFrame(rows).set_index("Model")
 print(results.to_string())
-results.to_excel("evaluation_results.xlsx")
+
+with pd.ExcelWriter("evaluation_results.xlsx") as writer:
+    results.to_excel(writer, sheet_name="Metrics")
+
+    rows_dist = []
+    gt_q = gt.apply(lambda r: get_quadrant(r["gt_valence"], r["gt_arousal"]), axis=1)
+    dist = gt_q.value_counts().sort_index()
+    rows_dist.append({"Model": "Ground Truth", **dist.to_dict()})
+
+    for model, path in MODELS.items():
+        df = pd.read_excel(path).merge(gt, on="Id").dropna(subset=["predicted_valence", "predicted_arousal"])
+        pred_q = df.apply(lambda r: get_quadrant(r["predicted_valence"], r["predicted_arousal"]), axis=1)
+        dist = pred_q.value_counts().sort_index()
+        rows_dist.append({"Model": model, **dist.to_dict()})
+
+    df_dist = pd.DataFrame(rows_dist).set_index("Model")
+    df_dist.to_excel(writer, sheet_name="Quadrant Distribution")
+
+print("Saved to evaluation_results.xlsx")

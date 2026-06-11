@@ -14,15 +14,17 @@ from huggingface_hub import InferenceClient
 # ─────────────
 HF_TOKEN = os.getenv("HF_TOKEN")
 #MODEL_ID = "meta-llama/Meta-Llama-3-8B-Instruct"
+#MODEL_ID = "meta-llama/Llama-3.3-70B-Instruct"
 #MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.2"
-MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
+#MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
+MODEL_ID = "Qwen/Qwen2.5-72B-Instruct"
 INPUT_CSV = "metadata_2014.csv"
 OUTPUT_XLSX = "valence_arousal_predictions.xlsx"
 MAX_NEW_TOKENS = 64
 TEMPERATURE = 0            # low temperature → more deterministic
 RETRY_LIMIT = 3            # retries on transient errors
 RETRY_DELAY = 5            # seconds between retries
-LIMIT = 50                 # For testing purposes: limit to process the first N rows
+LIMIT = 0                 # For testing purposes: limit to process the first N rows
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,9 +42,8 @@ SYSTEM_PROMPT = (
     "on a scale from 1.0 (very low) to 9.0 (very high). "
     "Valence represents the positivity/negativity of the emotion (1=very negative, 9=very positive). "
     "Arousal represents the energy/intensity level (1=very calm, 9=very energetic). "
-    "Respond ONLY with a valid JSON object. "
-    "Do NOT include any explanation, text, or formatting outside JSON. "
-    'Example: {"valence": 5.0, "arousal": 6.0}'
+    'Respond ONLY with a valid JSON object with fields "valence" and "arousal". '
+    "Values must be between 1.0 and 9.0. Do NOT include any explanation, text, or formatting outside JSON. "
 )
 
 
