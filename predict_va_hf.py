@@ -13,11 +13,10 @@ from huggingface_hub import InferenceClient
 # CONFIGURATION
 # ─────────────
 HF_TOKEN = os.getenv("HF_TOKEN")
-#MODEL_ID = "meta-llama/Meta-Llama-3-8B-Instruct"
+MODEL_ID = "meta-llama/Llama-3.1-8B-Instruct"
 #MODEL_ID = "meta-llama/Llama-3.3-70B-Instruct"
-#MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.2"
 #MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
-MODEL_ID = "Qwen/Qwen2.5-72B-Instruct"
+#MODEL_ID = "Qwen/Qwen2.5-72B-Instruct"
 INPUT_CSV = "metadata_2014.csv"
 OUTPUT_XLSX = "valence_arousal_predictions.xlsx"
 MAX_NEW_TOKENS = 64
@@ -45,6 +44,76 @@ SYSTEM_PROMPT = (
     'Respond ONLY with a valid JSON object with fields "valence" and "arousal". '
     "Values must be between 1.0 and 9.0. Do NOT include any explanation, text, or formatting outside JSON. "
 )
+
+FEW_SHOT_MESSAGES = [
+    # Example 1: High Valence - High Arousal
+    {
+        "role": "user",
+        "content": (
+            "Artist: Scott Kettner's Brazilian Brass Band\n"
+            "Album: WFMU live broadcast from Barbes on Transpacific Paradise 4/11/09\n"
+            "Track: Big Leg Woman\n"
+            "Genre: Jazz-International\n"
+            "Last.fm tags: jazz, blues, NOrleans brass band, cool\n\n"
+            "Based on the metadata above, predict valence and arousal."
+        ),
+    },
+    {
+        "role": "assistant",
+        "content": '{"valence": 7.9, "arousal": 7.1}',
+    },
+
+    # Example 2: High Valence - Low Arousal
+    {
+        "role": "user",
+        "content": (
+            "Artist: The Honorable Sleaze\n"
+            "Album: Dance Track\n"
+            "Track: Lovin'\n"
+            "Genre: Hip-Hop\n"
+            "Last.fm tags: 60s, classic rock, oldies, summer\n\n"
+            "Based on the metadata above, predict valence and arousal."
+        ),
+    },
+    {
+        "role": "assistant",
+        "content": '{"valence": 6.9, "arousal": 4.8}',
+    },
+
+    # Example 3: Low Valence - High Arousal
+    {
+        "role": "user",
+        "content": (
+            "Artist: Violins is not the answer\n"
+            "Album: Classic\n"
+            "Track:  dead.\n"
+            "Genre: Rock\n"
+            "Last.fm tags: DROP, Lil Wayne, rap, Hip-Hop\n\n"
+            "Based on the metadata above, predict valence and arousal."
+        ),
+    },
+    {
+        "role": "assistant",
+        "content": '{"valence": 3.2, "arousal": 6.9}',
+    },
+
+    # Example 4: Low Valence - Low Arousal
+    {
+        "role": "user",
+        "content": (
+            "Artist: Illusion of Safety\n"
+            "Album: unreleased Illusion of Safety mp3s\n"
+            "Track: Wasteland\n"
+            "Genre: Electronic\n"
+            "Last.fm tags: Power metal, speed metal, metal, DragonForce\n\n"
+            "Based on the metadata above, predict valence and arousal."
+        ),
+    },
+    {
+        "role": "assistant",
+        "content": '{"valence": 2.5, "arousal": 2.3}',
+    },
+]
 
 
 def build_user_prompt(row):
@@ -97,6 +166,7 @@ def predict_row(client, row):
     user_msg = build_user_prompt(row)
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
+        *FEW_SHOT_MESSAGES,
         {"role": "user",   "content": user_msg},
     ]
     # log.info("Messages: %s", messages)
