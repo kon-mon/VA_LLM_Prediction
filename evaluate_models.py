@@ -4,13 +4,13 @@ from scipy.stats import pearsonr
 
 # Models to evaluate
 MODELS = {
-    "Qwen 2.5 7B":  "valence_arousal_predictions-qwen.xlsx",
-    "Qwen 2.5 7B - ZeroShot":  "valence_arousal_predictions-qwen-zeroshot.xlsx",
-    "Qwen 2.5 72B":  "valence_arousal_predictions-qwen72.xlsx",
+    "Qwen 2.5 7B - FewShot":  "valence_arousal_predictions-qwen7-fewshot.xlsx",
+    "Qwen 2.5 7B - ZeroShot":  "valence_arousal_predictions-qwen7-zeroshot.xlsx",
+    "Qwen 2.5 72B - FewShot":  "valence_arousal_predictions-qwen72-fewshot.xlsx",
     "Qwen 2.5 72B - ZeroShot":  "valence_arousal_predictions-qwen72-zeroshot.xlsx",
-    "Llama 3 8B":   "valence_arousal_predictions-llama.xlsx",
-    "Llama 3 8B - ZeroShot":   "valence_arousal_predictions-llama-zeroshot.xlsx",
-    "Llama 3 70B":   "valence_arousal_predictions-llama70.xlsx",
+    "Llama 3 8B - FewShot":   "valence_arousal_predictions-llama8-fewshot.xlsx",
+    "Llama 3 8B - ZeroShot":   "valence_arousal_predictions-llama8-zeroshot.xlsx",
+    "Llama 3 70B - FewShot":   "valence_arousal_predictions-llama70-fewshot.xlsx",
     "Llama 3 70B - ZeroShot":   "valence_arousal_predictions-llama70-zeroshot.xlsx"
 }
 
