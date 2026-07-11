@@ -14,13 +14,11 @@ MODELS = {
     "Llama 3 70B - ZeroShot":   "valence_arousal_predictions-llama70-zeroshot.xlsx"
 }
 
-# Load and combine ground truth
-gt = pd.concat([
-    pd.read_csv("static_annotations_averaged_songs_1_2000.csv"),
-    pd.read_csv("static_annotations_averaged_songs_2000_2058.csv")
-])
+# Load ground truth for the 1000 songs under evaluation
+gt = pd.read_csv("static_annotations_averaged_songs_1_2000.csv")
 gt.columns = gt.columns.str.strip()
 gt = gt.rename(columns={"song_id": "Id", "valence_mean": "gt_valence", "arousal_mean": "gt_arousal"})
+gt = gt[(gt["Id"] >= 1001) & (gt["Id"] <= 2000)]
 
 # Assign each song to an emotional quadrant based on Russell circumplex model
 def get_quadrant(valence, arousal):
